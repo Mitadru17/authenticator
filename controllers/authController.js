@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const { generateAccessToken, generateRefreshToken } = require('../utils/token');
+const { sendOTPEmail } = require('../utils/email');
 
 /**
  * Register user with email or mobile and send OTP
@@ -42,8 +43,18 @@ const register = async (req, res) => {
     // Save user
     await user.save();
     
-    // In a real app, send OTP via email or SMS service
-    // For now, just return it in the response (for testing purposes)
+    // Send OTP via email if email is provided
+    if (email) {
+      try {
+        await sendOTPEmail(email, otp);
+      } catch (emailError) {
+        console.error('Failed to send OTP email:', emailError);
+        // We'll still create the user, but note that the email failed
+        // In a production app, you might want to handle this differently
+      }
+    }
+    
+    // For mobile OTP, in a real app you would integrate with an SMS service here
     
     return res.status(201).json({
       success: true,
@@ -243,9 +254,70 @@ const socialLoginCallback = (req, res) => {
   }
 };
 
+/**
+ * Resend OTP for email verification
+ * @route POST /api/auth/resend-otp
+ */
+const resendOTP = async (req, res) => {
+  try {
+    const { email, mobile } = req.body;
+    
+    // Find user by email or mobile
+    const user = email 
+      ? await User.findOne({ email }) 
+      : await User.findOne({ mobile });
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Check if user is already verified
+    if (user.isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'User is already verified'
+      });
+    }
+    
+    // Generate new OTP
+    const otp = user.generateOTP();
+    
+    // Save user
+    await user.save();
+    
+    // Send OTP via email if email is provided
+    if (email) {
+      try {
+        await sendOTPEmail(email, otp);
+      } catch (emailError) {
+        console.error('Failed to send OTP email:', emailError);
+      }
+    }
+    
+    // For mobile OTP, in a real app you would integrate with an SMS service here
+    
+    return res.status(200).json({
+      success: true,
+      message: 'OTP has been resent.',
+      otp: process.env.NODE_ENV === 'production' ? undefined : otp, // Only include OTP in development
+    });
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to resend OTP',
+      error: process.env.NODE_ENV === 'production' ? null : error.message
+    });
+  }
+};
+
 module.exports = {
   register,
   verifyOTP,
   login,
-  socialLoginCallback
+  socialLoginCallback,
+  resendOTP
 }; 

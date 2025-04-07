@@ -9,6 +9,7 @@ const {
   validate 
 } = require('../utils/validator');
 const { authenticate } = require('../middleware/auth');
+const { body } = require('express-validator');
 
 // Import passport config
 require('../config/passport');
@@ -27,6 +28,31 @@ router.post(
   otpValidationRules(),
   validate,
   authController.verifyOTP
+);
+
+// Resend OTP route
+router.post(
+  '/resend-otp',
+  [
+    body('email')
+      .optional()
+      .isEmail()
+      .withMessage('Please provide a valid email'),
+    body('mobile')
+      .optional()
+      .isMobilePhone()
+      .withMessage('Please provide a valid mobile number'),
+    body()
+      .custom((value) => {
+        // Either email or mobile is required
+        if (!value.email && !value.mobile) {
+          throw new Error('Either email or mobile is required');
+        }
+        return true;
+      }),
+    validate
+  ],
+  authController.resendOTP
 );
 
 // Login route

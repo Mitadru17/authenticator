@@ -73,8 +73,8 @@ userSchema.methods.generateOTP = function() {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   this.otp.code = otp;
   
-  // Set OTP expiry time (5 minutes from now)
-  const otpExpiryTime = parseInt(process.env.OTP_EXPIRY) || 300000; // Default 5 min in ms
+  // Set OTP expiry time (10 minutes from now)
+  const otpExpiryTime = parseInt(process.env.OTP_EXPIRY) || 600000; // Default 10 min in ms
   this.otp.expiry = new Date(Date.now() + otpExpiryTime);
   
   return otp;
