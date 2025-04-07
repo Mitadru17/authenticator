@@ -9,8 +9,8 @@ const registerValidationRules = () => {
       .withMessage('Please provide a valid email'),
     body('mobile')
       .optional()
-      .isMobilePhone()
-      .withMessage('Please provide a valid mobile number'),
+      .matches(/^\+[1-9]\d{1,14}$/)
+      .withMessage('Please provide a valid mobile number with country code (e.g., +123456789)'),
     body('password')
       .optional()
       .isLength({ min: 6 })
@@ -37,8 +37,8 @@ const otpValidationRules = () => {
       .withMessage('Please provide a valid email'),
     body('mobile')
       .optional()
-      .isMobilePhone()
-      .withMessage('Please provide a valid mobile number'),
+      .matches(/^\+[1-9]\d{1,14}$/)
+      .withMessage('Please provide a valid mobile number with country code (e.g., +123456789)'),
     body('otp')
       .isLength({ min: 6, max: 6 })
       .withMessage('OTP must be 6 digits')
@@ -64,8 +64,8 @@ const loginValidationRules = () => {
       .withMessage('Please provide a valid email'),
     body('mobile')
       .optional()
-      .isMobilePhone()
-      .withMessage('Please provide a valid mobile number'),
+      .matches(/^\+[1-9]\d{1,14}$/)
+      .withMessage('Please provide a valid mobile number with country code (e.g., +123456789)'),
     body('password')
       .notEmpty()
       .withMessage('Password is required'),

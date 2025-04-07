@@ -10,7 +10,7 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 ## Features
 
 - User registration with email or mobile
-- OTP verification via email
+- OTP verification via email and SMS
 - Password-based login
 - Social login with Google, GitHub, and LinkedIn
 - JWT-based authentication with access and refresh tokens
@@ -20,6 +20,7 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 - Node.js
 - MongoDB
 - SMTP server for sending emails
+- Twilio account for sending SMS
 - OAuth credentials for social login providers
 
 ## Setup
@@ -54,6 +55,11 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
    EMAIL_USER=your_email@example.com
    EMAIL_PASSWORD=your_email_password
    EMAIL_FROM=noreply@your-domain.com
+
+   # Twilio configuration
+   TWILIO_ACCOUNT_SID=your_twilio_account_sid
+   TWILIO_AUTH_TOKEN=your_twilio_auth_token
+   TWILIO_PHONE_NUMBER=your_twilio_phone_number
    ```
 
 4. Start the server
@@ -69,7 +75,7 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 
   ```json
   {
-    "email": "user@example.com", // or "mobile": "1234567890"
+    "email": "user@example.com", // or "mobile": "+123456789"
     "password": "password123"
   }
   ```
@@ -78,7 +84,7 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 
   ```json
   {
-    "email": "user@example.com", // or "mobile": "1234567890"
+    "email": "user@example.com", // or "mobile": "+123456789"
     "otp": "123456"
   }
   ```
@@ -87,14 +93,14 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 
   ```json
   {
-    "email": "user@example.com" // or "mobile": "1234567890"
+    "email": "user@example.com" // or "mobile": "+123456789"
   }
   ```
 
 - **POST /api/auth/login**: Login with email/mobile and password
   ```json
   {
-    "email": "user@example.com", // or "mobile": "1234567890"
+    "email": "user@example.com", // or "mobile": "+123456789"
     "password": "password123"
   }
   ```
@@ -109,10 +115,21 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 
 - **GET /api/auth/protected**: Test protected route (requires authentication)
 
-## Email OTP Verification Flow
+## OTP Verification Flow
+
+### Email Verification
 
 1. User registers with email and password
 2. System generates a 6-digit OTP and sends it to the user's email
+3. OTP is stored in the user document with a 10-minute expiry
+4. User submits the OTP using the verification endpoint
+5. System verifies the OTP and marks the user as verified
+6. If the OTP expires, user can request a new one via the resend-otp endpoint
+
+### Mobile Verification
+
+1. User registers with mobile number and password
+2. System generates a 6-digit OTP and sends it via SMS using Twilio
 3. OTP is stored in the user document with a 10-minute expiry
 4. User submits the OTP using the verification endpoint
 5. System verifies the OTP and marks the user as verified
@@ -133,6 +150,8 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 ├── routes/         # API routes
 │   └── auth.js     # Authentication routes
 ├── utils/          # Utility functions
+│   ├── email.js    # Email sending utilities
+│   ├── sms.js      # SMS sending utilities
 │   ├── token.js    # JWT token utilities
 │   └── validator.js # Request validation utilities
 ├── .env            # Environment variables
@@ -144,12 +163,12 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 
 - JWT tokens are signed with secure secrets
 - Passwords are hashed using bcrypt
-- OTP has a 5-minute expiration
+- OTP has a 10-minute expiration
 - Input validation for all routes
+- Mobile numbers must include country code
 
 ## Future Improvements
 
-- Email/SMS service integration for OTP delivery
 - Rate limiting for auth endpoints
 - Password reset functionality
 - Role-based access control

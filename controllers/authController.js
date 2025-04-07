@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const { generateAccessToken, generateRefreshToken } = require('../utils/token');
 const { sendOTPEmail } = require('../utils/email');
+const { sendOTPSMS } = require('../utils/sms');
 
 /**
  * Register user with email or mobile and send OTP
@@ -43,22 +44,28 @@ const register = async (req, res) => {
     // Save user
     await user.save();
     
-    // Send OTP via email if email is provided
+    // Send OTP via appropriate channel (email or SMS)
+    let otpSent = false;
+    
     if (email) {
       try {
         await sendOTPEmail(email, otp);
+        otpSent = true;
       } catch (emailError) {
         console.error('Failed to send OTP email:', emailError);
-        // We'll still create the user, but note that the email failed
-        // In a production app, you might want to handle this differently
+      }
+    } else if (mobile) {
+      try {
+        await sendOTPSMS(mobile, otp);
+        otpSent = true;
+      } catch (smsError) {
+        console.error('Failed to send OTP SMS:', smsError);
       }
     }
     
-    // For mobile OTP, in a real app you would integrate with an SMS service here
-    
     return res.status(201).json({
       success: true,
-      message: 'Registration successful. Please verify your account with OTP.',
+      message: `Registration successful. ${otpSent ? 'An OTP has been sent for verification.' : 'Failed to send OTP, please request a new one.'}`,
       otp: process.env.NODE_ENV === 'production' ? undefined : otp, // Only include OTP in development
       userId: user._id
     });
@@ -255,7 +262,7 @@ const socialLoginCallback = (req, res) => {
 };
 
 /**
- * Resend OTP for email verification
+ * Resend OTP for email or mobile verification
  * @route POST /api/auth/resend-otp
  */
 const resendOTP = async (req, res) => {
@@ -288,20 +295,28 @@ const resendOTP = async (req, res) => {
     // Save user
     await user.save();
     
-    // Send OTP via email if email is provided
+    // Send OTP via appropriate channel
+    let otpSent = false;
+    
     if (email) {
       try {
         await sendOTPEmail(email, otp);
+        otpSent = true;
       } catch (emailError) {
         console.error('Failed to send OTP email:', emailError);
       }
+    } else if (mobile) {
+      try {
+        await sendOTPSMS(mobile, otp);
+        otpSent = true;
+      } catch (smsError) {
+        console.error('Failed to send OTP SMS:', smsError);
+      }
     }
-    
-    // For mobile OTP, in a real app you would integrate with an SMS service here
     
     return res.status(200).json({
       success: true,
-      message: 'OTP has been resent.',
+      message: otpSent ? 'OTP has been resent.' : 'Failed to send OTP, please try again.',
       otp: process.env.NODE_ENV === 'production' ? undefined : otp, // Only include OTP in development
     });
   } catch (error) {
