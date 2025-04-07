@@ -1,12 +1,14 @@
 # Authentication API
 
-A Node.js + Express backend with MongoDB for user authentication, featuring:
+A production-ready Node.js + Express backend with MongoDB for user authentication, featuring:
 
 - Email/mobile registration with OTP verification
-- Password-based login
+- Password-based login with secure practices
 - Social login (Google, GitHub, LinkedIn)
 - JWT-based authentication
 - Protected routes with profile access
+- Docker deployment support
+- Security hardening with Helmet, CORS, and rate limiting
 
 ## Features
 
@@ -16,6 +18,11 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 - Social login with Google, GitHub, and LinkedIn
 - JWT-based authentication with access and refresh tokens
 - Protected routes accessible only with valid JWT
+- Rate limiting to prevent brute force attacks
+- Security headers with Helmet
+- CORS protection
+- Dockerized deployment options
+- Environment-based configuration
 
 ## Prerequisites
 
@@ -243,12 +250,16 @@ async function getProfile() {
 │   └── passport.js # Passport.js configuration for social login
 ├── controllers/    # Route controllers
 │   └── authController.js
+├── deploy/         # Deployment configurations
+│   └── nginx.conf  # Example Nginx config for reverse proxy
 ├── middleware/     # Custom middleware
 │   └── auth.js     # JWT authentication middleware
 ├── models/         # MongoDB models
 │   └── User.js     # User model
 ├── routes/         # API routes
 │   └── auth.js     # Authentication routes
+├── scripts/        # Utility scripts
+│   └── generate-secrets.js # Script to generate secure secrets
 ├── utils/          # Utility functions
 │   ├── email.js    # Email sending utilities
 │   ├── sms.js      # SMS sending utilities
@@ -261,9 +272,13 @@ async function getProfile() {
 │   ├── social-login.html # Social login demo page
 │   ├── auth-callback.html # OAuth callback handler
 │   └── profile-page.html # JWT authentication demo page
-├── .env            # Environment variables
+├── .env.example    # Example environment variables
+├── .gitignore      # Git ignore file
+├── docker-compose.yml # Docker Compose configuration
+├── Dockerfile      # Docker configuration
+├── DEPLOYMENT.md   # Deployment instructions
 ├── server.js       # Server entry point
-└── README.md
+└── README.md       # Project documentation
 ```
 
 ## Security Considerations
@@ -274,6 +289,11 @@ async function getProfile() {
 - Input validation for all routes
 - Mobile numbers must include country code
 - Social login uses secure OAuth 2.0 flow
+- Rate limiting prevents brute force attacks
+- Helmet adds security headers
+- CORS restricts access to trusted origins
+- Environment variables for sensitive configuration
+- Docker runs with non-root user for security
 
 ## Future Improvements
 
@@ -282,3 +302,65 @@ async function getProfile() {
 - Role-based access control
 - Session management with token rotation
 - Implement PKCE flow for OAuth security
+
+## Production Setup
+
+The API includes production-ready features for secure deployment:
+
+### Security Features
+
+- **Helmet**: Adds security-related HTTP headers
+- **CORS**: Configurable CORS protection
+- **Rate Limiting**: Prevents brute force and DoS attacks
+- **Environment Variables**: Secure configuration management
+- **Error Handling**: Production-safe error responses
+
+### Generate Secure Secrets
+
+Use the provided script to generate secure random secrets:
+
+```bash
+npm run generate-secrets
+```
+
+This will create secure random strings for JWT secrets and other sensitive values.
+
+### Docker Deployment
+
+The application includes Docker and Docker Compose configurations for easy deployment:
+
+1. Build the Docker image:
+
+   ```bash
+   npm run docker:build
+   # or directly with: docker-compose build
+   ```
+
+2. Start the containers:
+
+   ```bash
+   npm run docker:up
+   # or directly with: docker-compose up -d
+   ```
+
+3. View logs:
+
+   ```bash
+   npm run docker:logs
+   # or directly with: docker-compose logs -f
+   ```
+
+4. Stop the containers:
+   ```bash
+   npm run docker:down
+   # or directly with: docker-compose down
+   ```
+
+### Deployment Options
+
+For detailed deployment instructions, see the [DEPLOYMENT.md](DEPLOYMENT.md) file, which includes steps for deploying to:
+
+- DigitalOcean
+- Render
+- Vercel
+- Self-hosted servers with Docker
