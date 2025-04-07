@@ -10,6 +10,7 @@ const {
 } = require('../utils/validator');
 const { authenticate } = require('../middleware/auth');
 const { body } = require('express-validator');
+const User = require('../models/User');
 
 // Import passport config
 require('../config/passport');
@@ -106,6 +107,45 @@ router.get('/protected', authenticate, (req, res) => {
     message: 'You have access to protected route',
     user: req.user
   });
+});
+
+// Profile route - returns user profile data when authenticated
+router.get('/profile', authenticate, async (req, res) => {
+  try {
+    // req.user contains the decoded JWT payload with user ID
+    const userId = req.user.id;
+    
+    // Find user in database
+    const user = await User.findById(userId).select('-password -otp');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Return user profile data
+    return res.status(200).json({
+      success: true,
+      profile: {
+        id: user._id,
+        email: user.email,
+        mobile: user.mobile,
+        isVerified: user.isVerified,
+        authProvider: user.authProvider,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('Profile fetch error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user profile',
+      error: process.env.NODE_ENV === 'production' ? null : error.message
+    });
+  }
 });
 
 module.exports = router; 

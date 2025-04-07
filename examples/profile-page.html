@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JWT Authentication Example</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .card {
+      background-color: #fff;
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .btn {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      display: inline-block;
+    }
+    .btn-secondary {
+      background-color: #3498db;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    #profile-data {
+      display: none;
+      padding: 20px;
+      background-color: #f9f9f9;
+      border-radius: 5px;
+      margin-top: 20px;
+    }
+    .profile-field {
+      margin-bottom: 10px;
+    }
+    .profile-field span {
+      font-weight: bold;
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    #logout-btn {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>JWT Authentication Example</h1>
+  
+  <!-- Login Form -->
+  <div class="card" id="login-form">
+    <h2>Login</h2>
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="Enter your email">
+    </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="Enter your password">
+    </div>
+    <button class="btn" id="login-btn">Login</button>
+  </div>
+  
+  <!-- Status Messages -->
+  <div id="status-container"></div>
+  
+  <!-- JWT Token Display -->
+  <div class="card" id="token-card" style="display: none;">
+    <h2>Your JWT Token</h2>
+    <p><small id="token-display" style="word-break: break-all;"></small></p>
+  </div>
+  
+  <!-- Profile Actions -->
+  <div class="card" id="profile-actions" style="display: none;">
+    <h2>Profile Actions</h2>
+    <button class="btn" id="get-profile-btn">Get Profile</button>
+    <button class="btn btn-secondary" id="logout-btn">Logout</button>
+  </div>
+  
+  <!-- Profile Data -->
+  <div class="card" id="profile-data">
+    <h2>Your Profile</h2>
+    <div id="profile-details"></div>
+  </div>
+  
+  <script>
+    // API URL
+    const API_URL = 'http://localhost:5000/api/auth';
+    
+    // DOM Elements
+    const loginForm = document.getElementById('login-form');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const loginBtn = document.getElementById('login-btn');
+    const tokenCard = document.getElementById('token-card');
+    const tokenDisplay = document.getElementById('token-display');
+    const profileActions = document.getElementById('profile-actions');
+    const getProfileBtn = document.getElementById('get-profile-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const profileData = document.getElementById('profile-data');
+    const profileDetails = document.getElementById('profile-details');
+    const statusContainer = document.getElementById('status-container');
+    
+    // Check if user is already logged in
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        showLoggedInState(token);
+      }
+    });
+    
+    // Login Event Listener
+    loginBtn.addEventListener('click', async () => {
+      const email = emailInput.value;
+      const password = passwordInput.value;
+      
+      if (!email || !password) {
+        showStatus('Please enter both email and password', 'error');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_URL}/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email,
+            password
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          const token = data.accessToken;
+          localStorage.setItem('accessToken', token);
+          showStatus('Login successful!', 'success');
+          showLoggedInState(token);
+        } else {
+          showStatus(`Login failed: ${data.message}`, 'error');
+        }
+      } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+      }
+    });
+    
+    // Get Profile Event Listener
+    getProfileBtn.addEventListener('click', async () => {
+      const token = localStorage.getItem('accessToken');
+      
+      if (!token) {
+        showStatus('No authentication token found', 'error');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_URL}/profile`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          displayProfile(data.profile);
+          showStatus('Profile retrieved successfully', 'success');
+        } else {
+          showStatus(`Failed to retrieve profile: ${data.message}`, 'error');
+        }
+      } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+      }
+    });
+    
+    // Logout Event Listener
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('accessToken');
+      resetUIState();
+      showStatus('Logged out successfully', 'success');
+    });
+    
+    // Helper functions
+    function showStatus(message, type) {
+      const statusDiv = document.createElement('div');
+      statusDiv.textContent = message;
+      statusDiv.className = `status ${type}`;
+      
+      statusContainer.innerHTML = '';
+      statusContainer.appendChild(statusDiv);
+      
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        statusDiv.remove();
+      }, 5000);
+    }
+    
+    function showLoggedInState(token) {
+      // Hide login form
+      loginForm.style.display = 'none';
+      
+      // Show token
+      tokenDisplay.textContent = token;
+      tokenCard.style.display = 'block';
+      
+      // Show profile actions
+      profileActions.style.display = 'block';
+      logoutBtn.style.display = 'inline-block';
+    }
+    
+    function resetUIState() {
+      // Show login form
+      loginForm.style.display = 'block';
+      
+      // Hide token and profile
+      tokenCard.style.display = 'none';
+      profileActions.style.display = 'none';
+      profileData.style.display = 'none';
+      profileDetails.innerHTML = '';
+    }
+    
+    function displayProfile(profile) {
+      // Show profile data
+      profileData.style.display = 'block';
+      
+      // Clear previous details
+      profileDetails.innerHTML = '';
+      
+      // Create profile fields
+      for (const [key, value] of Object.entries(profile)) {
+        const fieldDiv = document.createElement('div');
+        fieldDiv.className = 'profile-field';
+        
+        const keySpan = document.createElement('span');
+        keySpan.textContent = `${key}: `;
+        
+        const valueText = document.createTextNode(value);
+        
+        fieldDiv.appendChild(keySpan);
+        fieldDiv.appendChild(valueText);
+        profileDetails.appendChild(fieldDiv);
+      }
+    }
+  </script>
+</body>
+</html> 

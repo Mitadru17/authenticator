@@ -6,6 +6,7 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 - Password-based login
 - Social login (Google, GitHub, LinkedIn)
 - JWT-based authentication
+- Protected routes with profile access
 
 ## Features
 
@@ -14,6 +15,7 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 - Password-based login
 - Social login with Google, GitHub, and LinkedIn
 - JWT-based authentication with access and refresh tokens
+- Protected routes accessible only with valid JWT
 
 ## Prerequisites
 
@@ -125,6 +127,7 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 ### Protected Routes
 
 - **GET /api/auth/protected**: Test protected route (requires authentication)
+- **GET /api/auth/profile**: Get the authenticated user's profile data
 
 ## OTP Verification Flow
 
@@ -186,6 +189,52 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 4. Request the necessary permissions
 5. Copy the Client ID and Client Secret to your .env file
 
+## JWT Authentication
+
+The API uses JSON Web Tokens (JWT) for authentication:
+
+1. When a user logs in successfully (via any method), the server generates:
+
+   - An access token (short-lived, default 1h)
+   - A refresh token (longer-lived, default 7d)
+
+2. To access protected routes, the client must include the access token in the Authorization header:
+
+   ```
+   Authorization: Bearer [access_token]
+   ```
+
+3. The server verifies the token signature and expiration before allowing access to protected resources.
+
+4. If the access token expires, the client should use the refresh token to obtain a new access token.
+
+### Example - Accessing a Protected Route
+
+```javascript
+// Get the profile data
+async function getProfile() {
+  try {
+    const token = localStorage.getItem("accessToken");
+    const response = await fetch("http://localhost:5000/api/auth/profile", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      console.log("Profile:", data.profile);
+    } else {
+      console.error("Error:", data.message);
+    }
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+```
+
 ## Project Structure
 
 ```
@@ -207,7 +256,11 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 │   └── validator.js # Request validation utilities
 ├── examples/       # Example code for implementation
 │   ├── mobile-registration.js # Mobile OTP flow example
-│   └── social-login.js # Social login flow example
+│   ├── social-login.js # Social login flow example
+│   ├── profile-access.js # JWT authentication example
+│   ├── social-login.html # Social login demo page
+│   ├── auth-callback.html # OAuth callback handler
+│   └── profile-page.html # JWT authentication demo page
 ├── .env            # Environment variables
 ├── server.js       # Server entry point
 └── README.md
