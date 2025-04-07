@@ -225,20 +225,37 @@ const login = async (req, res) => {
 
 /**
  * Handle social login callback
+ * @route GET /api/auth/google/callback, /api/auth/github/callback, /api/auth/linkedin/callback
  */
 const socialLoginCallback = (req, res) => {
   try {
+    // Passport will attach the user to req.user
     const user = req.user;
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication failed'
+      });
+    }
     
     // Generate tokens
     const payload = { id: user._id };
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
     
-    // Redirect to frontend with tokens
-    // In a real app, this should redirect to your frontend app with tokens
-    // For now, just return the tokens in the response
+    // In a real application, you should redirect to the frontend with tokens
+    // There are different ways to handle this:
     
+    // Option 1: Redirect to frontend with tokens as query parameters
+    // return res.redirect(`${process.env.FRONTEND_URL}/auth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}`);
+    
+    // Option 2: Set tokens in cookies (requires additional middleware)
+    // res.cookie('accessToken', accessToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+    // res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: process.env.NODE_ENV === 'production' });
+    // return res.redirect(`${process.env.FRONTEND_URL}/dashboard`);
+    
+    // For now, we'll just return the tokens in the response
     return res.status(200).json({
       success: true,
       message: 'Social login successful',

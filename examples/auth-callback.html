@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authentication Callback</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+      text-align: center;
+    }
+    .loader {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #3498db;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 30px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .error {
+      color: #e74c3c;
+      background-color: #fdecea;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+      display: none;
+    }
+    .success {
+      color: #27ae60;
+      background-color: #e8f5e9;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Authentication Callback</h1>
+  
+  <div class="loader" id="loader"></div>
+  <p id="status-message">Processing authentication...</p>
+  
+  <div class="error" id="error-message"></div>
+  <div class="success" id="success-message"></div>
+  
+  <script>
+    // Function to handle social login callback
+    function handleAuthCallback() {
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      // Check if there's an error parameter in the URL
+      const error = urlParams.get('error');
+      if (error) {
+        showError('Authentication failed: ' + error);
+        return;
+      }
+      
+      // Get the tokens from the URL
+      const accessToken = urlParams.get('accessToken');
+      const refreshToken = urlParams.get('refreshToken');
+      
+      if (accessToken && refreshToken) {
+        // Store tokens
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        
+        showSuccess('Authentication successful! Redirecting...');
+        
+        // Redirect to dashboard after a brief delay
+        setTimeout(() => {
+          window.location.href = '/dashboard.html';
+        }, 2000);
+      } else {
+        // If no tokens in URL, assume they are in the hash fragment
+        // This is common in some OAuth implementations
+        const hashParams = new URLSearchParams(window.location.hash.slice(1));
+        const hashAccessToken = hashParams.get('accessToken');
+        const hashRefreshToken = hashParams.get('refreshToken');
+        
+        if (hashAccessToken && hashRefreshToken) {
+          // Store tokens
+          localStorage.setItem('accessToken', hashAccessToken);
+          localStorage.setItem('refreshToken', hashRefreshToken);
+          
+          showSuccess('Authentication successful! Redirecting...');
+          
+          // Redirect to dashboard after a brief delay
+          setTimeout(() => {
+            window.location.href = '/dashboard.html';
+          }, 2000);
+        } else {
+          // If no tokens in URL or hash, try to extract the code
+          // and exchange it for tokens (for authorization code flow)
+          const code = urlParams.get('code');
+          
+          if (code) {
+            exchangeCodeForTokens(code);
+          } else {
+            showError('No authentication data found');
+          }
+        }
+      }
+    }
+    
+    // Function to exchange authorization code for tokens
+    async function exchangeCodeForTokens(code) {
+      try {
+        // This is just an example, you'd need to implement the actual token exchange endpoint
+        const response = await fetch('http://localhost:5000/api/auth/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ code })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          // Store tokens
+          localStorage.setItem('accessToken', data.accessToken);
+          localStorage.setItem('refreshToken', data.refreshToken);
+          
+          showSuccess('Authentication successful! Redirecting...');
+          
+          // Redirect to dashboard after a brief delay
+          setTimeout(() => {
+            window.location.href = '/dashboard.html';
+          }, 2000);
+        } else {
+          showError(data.message || 'Failed to exchange code for tokens');
+        }
+      } catch (error) {
+        console.error('Token exchange error:', error);
+        showError('Failed to complete authentication');
+      }
+    }
+    
+    // Helper functions
+    function showError(message) {
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('status-message').style.display = 'none';
+      
+      const errorElement = document.getElementById('error-message');
+      errorElement.textContent = message;
+      errorElement.style.display = 'block';
+    }
+    
+    function showSuccess(message) {
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('status-message').style.display = 'none';
+      
+      const successElement = document.getElementById('success-message');
+      successElement.textContent = message;
+      successElement.style.display = 'block';
+    }
+    
+    // Run the callback handler when the page loads
+    window.onload = handleAuthCallback;
+  </script>
+</body>
+</html> 

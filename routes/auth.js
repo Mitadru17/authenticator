@@ -40,8 +40,8 @@ router.post(
       .withMessage('Please provide a valid email'),
     body('mobile')
       .optional()
-      .isMobilePhone()
-      .withMessage('Please provide a valid mobile number'),
+      .matches(/^\+[1-9]\d{1,14}$/)
+      .withMessage('Please provide a valid mobile number with country code (e.g., +123456789)'),
     body()
       .custom((value) => {
         // Either email or mobile is required

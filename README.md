@@ -21,7 +21,10 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 - MongoDB
 - SMTP server for sending emails
 - Twilio account for sending SMS
-- OAuth credentials for social login providers
+- OAuth credentials for social login providers:
+  - Google OAuth credentials from Google Developer Console
+  - GitHub OAuth application credentials
+  - LinkedIn OAuth application credentials
 
 ## Setup
 
@@ -40,13 +43,16 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
    JWT_EXPIRY=1h
    JWT_REFRESH_EXPIRY=7d
    OTP_EXPIRY=600000
+   BACKEND_URL=http://localhost:5000
+   FRONTEND_URL=http://localhost:3000
+
+   # OAuth credentials
    GOOGLE_CLIENT_ID=your_google_client_id
    GOOGLE_CLIENT_SECRET=your_google_client_secret
    GITHUB_CLIENT_ID=your_github_client_id
    GITHUB_CLIENT_SECRET=your_github_client_secret
    LINKEDIN_CLIENT_ID=your_linkedin_client_id
    LINKEDIN_CLIENT_SECRET=your_linkedin_client_secret
-   BACKEND_URL=http://localhost:5000
 
    # Email configuration
    EMAIL_HOST=smtp.example.com
@@ -108,8 +114,13 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 ### Social Login Routes
 
 - **GET /api/auth/google**: Initiate Google OAuth flow
+- **GET /api/auth/google/callback**: Handle Google OAuth callback
+
 - **GET /api/auth/github**: Initiate GitHub OAuth flow
+- **GET /api/auth/github/callback**: Handle GitHub OAuth callback
+
 - **GET /api/auth/linkedin**: Initiate LinkedIn OAuth flow
+- **GET /api/auth/linkedin/callback**: Handle LinkedIn OAuth callback
 
 ### Protected Routes
 
@@ -135,6 +146,46 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 5. System verifies the OTP and marks the user as verified
 6. If the OTP expires, user can request a new one via the resend-otp endpoint
 
+## Social Login Flow
+
+1. User clicks on a social login button (Google, GitHub, or LinkedIn)
+2. User is redirected to the provider's authentication page
+3. After successful authentication, the provider redirects back to the application's callback URL
+4. The system checks if the user already exists by email:
+   - If the user exists but used a different auth provider, the system updates the auth provider
+   - If the user doesn't exist, a new account is created with the provider's data
+5. The user is automatically verified (isVerified = true)
+6. JWT tokens (access token and refresh token) are generated and returned
+7. The user is considered logged in and can access protected routes
+
+### Setting Up Social Login
+
+#### Google OAuth
+
+1. Go to the [Google Developer Console](https://console.developers.google.com/)
+2. Create a new project
+3. Set up OAuth consent screen
+4. Create OAuth client ID credentials
+5. Add authorized JavaScript origins (e.g., http://localhost:5000)
+6. Add authorized redirect URIs (e.g., http://localhost:5000/api/auth/google/callback)
+7. Copy the Client ID and Client Secret to your .env file
+
+#### GitHub OAuth
+
+1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+2. Register a new OAuth application
+3. Set the homepage URL (e.g., http://localhost:3000)
+4. Set the callback URL (e.g., http://localhost:5000/api/auth/github/callback)
+5. Copy the Client ID and Client Secret to your .env file
+
+#### LinkedIn OAuth
+
+1. Go to [LinkedIn Developer Portal](https://www.linkedin.com/developers)
+2. Create a new app
+3. Set redirect URLs (e.g., http://localhost:5000/api/auth/linkedin/callback)
+4. Request the necessary permissions
+5. Copy the Client ID and Client Secret to your .env file
+
 ## Project Structure
 
 ```
@@ -154,6 +205,9 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 │   ├── sms.js      # SMS sending utilities
 │   ├── token.js    # JWT token utilities
 │   └── validator.js # Request validation utilities
+├── examples/       # Example code for implementation
+│   ├── mobile-registration.js # Mobile OTP flow example
+│   └── social-login.js # Social login flow example
 ├── .env            # Environment variables
 ├── server.js       # Server entry point
 └── README.md
@@ -166,9 +220,12 @@ A Node.js + Express backend with MongoDB for user authentication, featuring:
 - OTP has a 10-minute expiration
 - Input validation for all routes
 - Mobile numbers must include country code
+- Social login uses secure OAuth 2.0 flow
 
 ## Future Improvements
 
 - Rate limiting for auth endpoints
 - Password reset functionality
 - Role-based access control
+- Session management with token rotation
+- Implement PKCE flow for OAuth security

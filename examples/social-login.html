@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Social Login Example</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 12px;
+      margin: 15px 0;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      color: white;
+      text-align: center;
+      transition: opacity 0.3s;
+    }
+    .btn:hover {
+      opacity: 0.9;
+    }
+    .google {
+      background-color: #DB4437;
+    }
+    .github {
+      background-color: #333;
+    }
+    .linkedin {
+      background-color: #0077B5;
+    }
+    .icon {
+      margin-right: 10px;
+      font-size: 20px;
+    }
+    .or-divider {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+      color: #777;
+    }
+    .or-divider::before,
+    .or-divider::after {
+      content: "";
+      flex: 1;
+      border-bottom: 1px solid #ddd;
+    }
+    .or-divider::before {
+      margin-right: 10px;
+    }
+    .or-divider::after {
+      margin-left: 10px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .login-btn {
+      background-color: #4CAF50;
+      width: 100%;
+      padding: 12px;
+      margin: 15px 0;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h1>Authentication API</h1>
+  
+  <!-- Social Login Buttons -->
+  <button class="btn google" onclick="loginWithGoogle()">
+    <span class="icon">G</span> Continue with Google
+  </button>
+  
+  <button class="btn github" onclick="loginWithGitHub()">
+    <span class="icon">&#xf09b;</span> Continue with GitHub
+  </button>
+  
+  <button class="btn linkedin" onclick="loginWithLinkedIn()">
+    <span class="icon">in</span> Continue with LinkedIn
+  </button>
+  
+  <div class="or-divider">OR</div>
+  
+  <!-- Traditional Login Form -->
+  <form id="loginForm">
+    <div class="form-group">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" placeholder="Enter your email">
+    </div>
+    
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" placeholder="Enter your password">
+    </div>
+    
+    <button type="submit" class="login-btn">Login</button>
+  </form>
+  
+  <p style="text-align: center">
+    Don't have an account? <a href="#" onclick="showRegisterForm()">Register</a>
+  </p>
+  
+  <script>
+    // Social login functions
+    function loginWithGoogle() {
+      window.location.href = 'http://localhost:5000/api/auth/google';
+    }
+    
+    function loginWithGitHub() {
+      window.location.href = 'http://localhost:5000/api/auth/github';
+    }
+    
+    function loginWithLinkedIn() {
+      window.location.href = 'http://localhost:5000/api/auth/linkedin';
+    }
+    
+    // Traditional login form handler
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email,
+            password
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          // Store tokens
+          localStorage.setItem('accessToken', data.accessToken);
+          localStorage.setItem('refreshToken', data.refreshToken);
+          
+          // Redirect to dashboard or home page
+          alert('Login successful!');
+          // window.location.href = '/dashboard';
+        } else {
+          alert(data.message || 'Login failed');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        alert('Login failed. Please try again.');
+      }
+    });
+    
+    // For demo purposes only
+    function showRegisterForm() {
+      alert('Registration form would be shown here.');
+    }
+    
+    // This function would be used on the callback page
+    function handleAuthCallback() {
+      // Get URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const accessToken = urlParams.get('accessToken');
+      const refreshToken = urlParams.get('refreshToken');
+      
+      if (accessToken && refreshToken) {
+        // Store tokens
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        
+        // Redirect to dashboard
+        window.location.href = '/dashboard';
+      } else {
+        console.error('Authentication failed');
+        window.location.href = '/login?error=auth_failed';
+      }
+    }
+  </script>
+</body>
+</html> 
